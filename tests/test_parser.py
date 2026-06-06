@@ -1,4 +1,3 @@
-import tempfile
 from pathlib import Path
 
 from ankify.parser import (
@@ -22,7 +21,7 @@ def test_compute_hash():
 def test_get_deck_from_path_root():
     base = Path("/notes")
     file = Path("/notes/test.md")
-    assert get_deck_from_path(file, base) == "Default"
+    assert get_deck_from_path(file, base) == "default"
 
 
 def test_get_deck_from_path_nested():
@@ -31,11 +30,9 @@ def test_get_deck_from_path_nested():
     assert get_deck_from_path(file, base) == "python::basics"
 
 
-def test_parse_markdown_file():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        base = Path(tmpdir)
-        file = base / "test.md"
-        file.write_text("""# Title
+def test_parse_markdown_file(tmp_path: Path):
+    file = tmp_path / "test.md"
+    file.write_text("""# Title
 
 ## What is Python?
 
@@ -47,47 +44,42 @@ A programming language.
 print("hello")
 ```
 """)
-        cards = parse_markdown_file(file, base)
+    cards = parse_markdown_file(file, tmp_path)
 
-        assert len(cards) == 2
+    assert len(cards) == 2
 
-        assert cards[0].front_raw == "What is Python?"
-        assert cards[0].back_raw == "A programming language."
-        assert cards[0].deck == "Default"
+    assert cards[0].front_raw == "What is Python?"
+    assert cards[0].back_raw == "A programming language."
+    assert cards[0].deck == "default"
 
-        assert cards[1].front_raw == "How do you print?"
-        assert "print" in cards[1].back_raw
+    assert cards[1].front_raw == "How do you print?"
+    assert "print" in cards[1].back_raw
 
 
-def test_parse_markdown_file_empty_back():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        base = Path(tmpdir)
-        file = base / "test.md"
-        file.write_text("""## Question with no answer
+def test_parse_markdown_file_empty_back(tmp_path: Path):
+    file = tmp_path / "test.md"
+    file.write_text("""## Question with no answer
 
 ## Another question
 
 Has an answer.
 """)
-        cards = parse_markdown_file(file, base)
+    cards = parse_markdown_file(file, tmp_path)
 
-        assert len(cards) == 1
-        assert cards[0].front_raw == "Another question"
+    assert len(cards) == 1
+    assert cards[0].front_raw == "Another question"
 
 
-def test_parse_all():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        base = Path(tmpdir)
+def test_parse_all(tmp_path: Path):
+    (tmp_path / "topic1").mkdir()
+    (tmp_path / "topic1" / "file.md").write_text("## Q1\n\nA1")
 
-        (base / "topic1").mkdir()
-        (base / "topic1" / "file.md").write_text("## Q1\n\nA1")
+    (tmp_path / "topic2").mkdir()
+    (tmp_path / "topic2" / "file.md").write_text("## Q2\n\nA2")
 
-        (base / "topic2").mkdir()
-        (base / "topic2" / "file.md").write_text("## Q2\n\nA2")
+    cards = parse_all(tmp_path)
 
-        cards = parse_all(base)
-
-        assert len(cards) == 2
-        decks = {c.deck for c in cards}
-        assert "topic1" in decks
-        assert "topic2" in decks
+    assert len(cards) == 2
+    decks = {c.deck for c in cards}
+    assert "topic1" in decks
+    assert "topic2" in decks

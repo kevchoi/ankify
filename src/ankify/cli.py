@@ -2,8 +2,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from .parser import parse_all
 from .anki import AnkiClient
+from .parser import parse_all
 from .sync import sync
 
 

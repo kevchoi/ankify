@@ -1,8 +1,9 @@
 import hashlib
 import re
-import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+HEADING_PATTERN = re.compile(r"^## (.+)$", re.MULTILINE)
 
 
 @dataclass
@@ -20,9 +21,7 @@ class MarkdownCard:
 
 def get_deck_from_path(file_path: Path, base_path: Path) -> str:
     relative = file_path.parent.relative_to(base_path)
-    if not relative.parts:
-        return "Default"
-    return "::".join(relative.parts)
+    return "::".join(relative.parts) if relative.parts else "default"
 
 
 def parse_markdown_file(file_path: Path, base_path: Path) -> list[MarkdownCard]:
@@ -31,8 +30,7 @@ def parse_markdown_file(file_path: Path, base_path: Path) -> list[MarkdownCard]:
     relative_path = file_path.relative_to(base_path.parent)
     source_file = str(relative_path)
 
-    heading_pattern = re.compile(r"^## (.+)$", re.MULTILINE)
-    matches = list(heading_pattern.finditer(content))
+    matches = list(HEADING_PATTERN.finditer(content))
 
     cards: list[MarkdownCard] = []
 
@@ -63,7 +61,8 @@ def parse_markdown_file(file_path: Path, base_path: Path) -> list[MarkdownCard]:
 
 def parse_all(base_path: Path) -> list[MarkdownCard]:
     files = sorted(base_path.rglob("*.md"))
-    if not files:
-        print(f"No markdown files found in {base_path}", file=sys.stderr)
-        return []
-    return [card for f in files for card in parse_markdown_file(f, base_path)]
+    return [
+        card
+        for file_path in files
+        for card in parse_markdown_file(file_path, base_path)
+    ]

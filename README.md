@@ -33,8 +33,6 @@ ankify sync ./notes --verbose
 # Delete cards from Anki that are no longer in markdown
 ankify sync ./notes --delete
 
-# Use a custom root deck name (instead of directory name)
-ankify sync ./notes --deck "My Custom Deck"
 ```
 
 ## Card Format
@@ -56,10 +54,13 @@ print("Hello, World!")
 Subdirectories become Anki decks:
 
 ```
-notes/
-  python/
-    basics.md     → "notes::python" deck
-  spanish.md      → "notes" deck
+anki/
+  deck/
+    basics.md             → "deck" deck
+  interview-prep/
+    systems/
+      basics.md           → "interview-prep::systems" deck
+  scratch.md              → "default" deck
 ```
 
 ## Try it out
@@ -70,9 +71,9 @@ The `examples/` directory contains test cards:
 examples/
   programming/
     python/
-      basics.md     → "examples::programming::python" deck
+      basics.md     → "programming::python" deck
   languages/
-    spanish.md      → "examples::languages" deck
+    spanish.md      → "languages" deck
 ```
 
 ```bash

@@ -65,6 +65,14 @@ def get_existing_notes(client: AnkiClient) -> dict[str, AnkiNote]:
     return existing
 
 
+def _preview(text: str) -> str:
+    return text[:50]
+
+
+def _belongs_to_path(note: AnkiNote, path: Path) -> bool:
+    return note.source_file.startswith(path.name + "/")
+
+
 def sync(
     path: Path,
     client: AnkiClient,
@@ -74,51 +82,36 @@ def sync(
 ) -> SyncStats:
     stats = SyncStats()
 
-    if not dry_run:
-        client.create_note_type_if_not_exists()
-
     cards = parse_all(path)
 
     if verbose:
         print(f"Found {len(cards)} cards in {path}")
 
+    if not dry_run:
+        client.create_note_type_if_not_exists()
+
     existing = get_existing_notes(client)
+    existing_for_path = {
+        source_hash: note
+        for source_hash, note in existing.items()
+        if _belongs_to_path(note, path)
+    }
 
     if verbose:
-        print(f"Found {len(existing)} existing notes in Anki")
+        print(f"Found {len(existing_for_path)} existing notes in Anki")
 
     if not dry_run:
-        for deck in {card.deck for card in cards}:
+        for deck in sorted({card.deck for card in cards}):
             client.create_deck(deck)
 
     for card in cards:
         front_html = render_markdown(card.front_raw)
         back_html = render_markdown(card.back_raw)
+        note = existing_for_path.get(card.source_hash)
 
-        if card.source_hash in existing:
-            note = existing[card.source_hash]
-            content_changed = note.front != front_html or note.back != back_html
-            deck_changed = note.deck != card.deck
-
-            if content_changed:
-                if verbose:
-                    print(f"Updating: {card.front_raw[:50]}")
-                if not dry_run:
-                    client.update_note(
-                        note.note_id, front_html, back_html, card.source_file
-                    )
-                stats.updated += 1
-
-            if deck_changed:
-                if verbose:
-                    print(f"Moving to {card.deck}: {card.front_raw[:50]}")
-                if not dry_run and note.card_ids:
-                    client.change_deck(note.card_ids, card.deck)
-                stats.moved += 1
-
-        else:
+        if note is None:
             if verbose:
-                print(f"Creating: {card.front_raw[:50]}")
+                print(f"Creating: {_preview(card.front_raw)}")
             try:
                 if not dry_run:
                     client.add_note(
@@ -130,39 +123,56 @@ def sync(
                     )
                 stats.created += 1
             except Exception as e:
-                stats.errors.append(f"Failed to create '{card.front_raw[:50]}': {e}")
+                stats.errors.append(
+                    f"Failed to create '{_preview(card.front_raw)}': {e}"
+                )
+            continue
 
-    base_dir = path.name
+        if note.front != front_html or note.back != back_html:
+            if verbose:
+                print(f"Updating: {_preview(card.front_raw)}")
+            if not dry_run:
+                client.update_note(
+                    note.note_id, front_html, back_html, card.source_file
+                )
+            stats.updated += 1
+
+        if note.deck != card.deck:
+            if verbose:
+                print(f"Moving to {card.deck}: {_preview(card.front_raw)}")
+            if not dry_run and note.card_ids:
+                client.change_deck(note.card_ids, card.deck)
+            stats.moved += 1
 
     if delete:
-        markdown_hashes = {card.source_hash for card in cards}
+        current_hashes = {card.source_hash for card in cards}
         orphaned_notes = [
             note
-            for note in existing.values()
-            if note.source_file.startswith(base_dir + "/")
-            and note.source_hash not in markdown_hashes
+            for note in existing_for_path.values()
+            if note.source_hash not in current_hashes
         ]
-        if orphaned_notes:
-            for note in orphaned_notes:
-                if verbose:
-                    print(f"Deleting: {note.front[:50]}")
-            if not dry_run:
-                client.delete_notes([note.note_id for note in orphaned_notes])
-            stats.deleted = len(orphaned_notes)
+
+        for note in orphaned_notes:
+            if verbose:
+                print(f"Deleting: {_preview(note.front)}")
+
+        if not dry_run:
+            client.delete_notes([note.note_id for note in orphaned_notes])
+
+        stats.deleted = len(orphaned_notes)
 
     if not dry_run and (stats.moved > 0 or stats.deleted > 0):
-        root_decks = {card.deck.split("::")[0] for card in cards}
-        root_decks |= {
-            note.deck.split("::")[0]
-            for note in existing.values()
-            if note.source_file.startswith(base_dir + "/")
-        }
+        root_decks = {card.deck.split("::", 1)[0] for card in cards}
+        root_decks.update(
+            note.deck.split("::", 1)[0] for note in existing_for_path.values()
+        )
+
         for root_deck in root_decks:
             deleted_decks = client.delete_empty_decks(root_deck)
             if verbose:
                 for deck in deleted_decks:
                     print(f"Removed empty deck: {deck}")
 
-    stats.total = len(existing) + stats.created - stats.deleted
+    stats.total = len(existing_for_path) + stats.created - stats.deleted
 
     return stats
