@@ -2,6 +2,7 @@ from pathlib import Path
 
 from ankify.parser import (
     MarkdownCard,
+    find_duplicate_fronts,
     get_deck_from_path,
     parse_markdown_file,
     parse_all,
@@ -83,3 +84,34 @@ def test_parse_all(tmp_path: Path):
     decks = {c.deck for c in cards}
     assert "topic1" in decks
     assert "topic2" in decks
+
+
+def test_parse_all_ignores_agent_files(tmp_path: Path):
+    (tmp_path / "AGENTS.md").write_text("## Should be ignored\n\nDo not sync.")
+    (tmp_path / "CLAUDE.md").write_text("## Also ignored\n\nDo not sync.")
+    (tmp_path / "cards.md").write_text("## Real card\n\nSync this.")
+
+    cards = parse_all(tmp_path)
+
+    assert len(cards) == 1
+    assert cards[0].front_raw == "Real card"
+
+
+def test_find_duplicate_fronts(tmp_path: Path):
+    (tmp_path / "a.md").write_text("## Same front\n\nAnswer A")
+    (tmp_path / "b.md").write_text("## Same front\n\nAnswer B")
+    (tmp_path / "c.md").write_text("## Unique front\n\nAnswer C")
+
+    duplicates = find_duplicate_fronts(parse_all(tmp_path))
+
+    assert len(duplicates) == 1
+    assert len(duplicates[0]) == 2
+    assert {c.front_raw for c in duplicates[0]} == {"Same front"}
+
+
+def test_find_duplicate_fronts_none():
+    cards = [
+        MarkdownCard("Q1", "A1", "h1", "f.md", "deck"),
+        MarkdownCard("Q2", "A2", "h2", "f.md", "deck"),
+    ]
+    assert find_duplicate_fronts(cards) == []

@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .anki import AnkiClient, NOTE_TYPE_NAME
-from .parser import parse_all
+from .parser import find_duplicate_fronts, parse_all
 from .render import render_markdown
 
 
@@ -87,6 +87,13 @@ def sync(
     if verbose:
         print(f"Found {len(cards)} cards in {path}")
 
+    for group in find_duplicate_fronts(cards):
+        files = ", ".join(sorted({c.source_file for c in group}))
+        print(
+            f"Warning: front '{_preview(group[0].front_raw)}' appears "
+            f"{len(group)} times ({files}); only one note will sync."
+        )
+
     if not dry_run:
         client.create_note_type_if_not_exists()
 
@@ -131,18 +138,28 @@ def sync(
         if note.front != front_html or note.back != back_html:
             if verbose:
                 print(f"Updating: {_preview(card.front_raw)}")
-            if not dry_run:
-                client.update_note(
-                    note.note_id, front_html, back_html, card.source_file
+            try:
+                if not dry_run:
+                    client.update_note(
+                        note.note_id, front_html, back_html, card.source_file
+                    )
+                stats.updated += 1
+            except Exception as e:
+                stats.errors.append(
+                    f"Failed to update '{_preview(card.front_raw)}': {e}"
                 )
-            stats.updated += 1
 
         if note.deck != card.deck:
             if verbose:
                 print(f"Moving to {card.deck}: {_preview(card.front_raw)}")
-            if not dry_run and note.card_ids:
-                client.change_deck(note.card_ids, card.deck)
-            stats.moved += 1
+            try:
+                if not dry_run and note.card_ids:
+                    client.change_deck(note.card_ids, card.deck)
+                stats.moved += 1
+            except Exception as e:
+                stats.errors.append(
+                    f"Failed to move '{_preview(card.front_raw)}': {e}"
+                )
 
     if delete:
         current_hashes = {card.source_hash for card in cards}
@@ -173,6 +190,6 @@ def sync(
                 for deck in deleted_decks:
                     print(f"Removed empty deck: {deck}")
 
-    stats.total = len(existing_for_path) + stats.created - stats.deleted
+    stats.total = len(cards)
 
     return stats

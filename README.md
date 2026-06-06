@@ -51,6 +51,8 @@ print("Hello, World!")
 ​```
 ```
 
+`AGENTS.md` and `CLAUDE.md` files are ignored, so agent instructions can live in the synced notes tree.
+
 Subdirectories become Anki decks:
 
 ```

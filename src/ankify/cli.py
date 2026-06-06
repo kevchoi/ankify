@@ -28,10 +28,12 @@ def cmd_parse(args: argparse.Namespace) -> int:
     cards = parse_all(path)
     print(f"Parsed {len(cards)} cards from {path}")
     for card in cards:
-        print(
-            f"{card.front_raw},{card.back_raw},{card.source_hash},{card.source_file},{card.deck}"
-        )
         print("-" * 80)
+        print(f"Deck:  {card.deck}")
+        print(f"File:  {card.source_file}")
+        print(f"Hash:  {card.source_hash}")
+        print(f"Front: {card.front_raw}")
+        print(f"Back:  {card.back_raw}")
     return 0
 
 
