@@ -4,7 +4,7 @@ import httpx
 
 ANKI_CONNECT_URL = "http://localhost:8765"
 ANKI_CONNECT_VERSION = 6
-NOTE_TYPE_NAME = "mdanki"
+NOTE_TYPE_NAME = "ankify"
 
 
 class AnkiConnectError(Exception):

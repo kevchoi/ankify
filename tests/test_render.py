@@ -1,4 +1,4 @@
-from mdanki.render import render_markdown
+from ankify.render import render_markdown
 
 
 def test_render_plain_text():

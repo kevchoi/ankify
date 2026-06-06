@@ -1,13 +1,13 @@
-# mdanki
+# ankify
 
 Sync Markdown flashcards to Anki via AnkiConnect.
 
 ## Installation
 
 ```bash
-uv add mdanki
+uv add ankify
 # or
-pip install mdanki
+pip install ankify
 ```
 
 Requires Anki with [AnkiConnect](https://ankiweb.net/shared/info/2055492159) addon.
@@ -16,25 +16,25 @@ Requires Anki with [AnkiConnect](https://ankiweb.net/shared/info/2055492159) add
 
 ```bash
 # Check connection to Anki
-mdanki status
+ankify status
 
 # Parse markdown files (preview cards)
-mdanki parse ./notes
+ankify parse ./notes
 
 # Sync cards to Anki
-mdanki sync ./notes
+ankify sync ./notes
 
 # Preview sync without making changes
-mdanki sync ./notes --dry-run
+ankify sync ./notes --dry-run
 
 # Verbose output
-mdanki sync ./notes --verbose
+ankify sync ./notes --verbose
 
 # Delete cards from Anki that are no longer in markdown
-mdanki sync ./notes --delete
+ankify sync ./notes --delete
 
 # Use a custom root deck name (instead of directory name)
-mdanki sync ./notes --deck "My Custom Deck"
+ankify sync ./notes --deck "My Custom Deck"
 ```
 
 ## Card Format
@@ -76,8 +76,8 @@ examples/
 ```
 
 ```bash
-mdanki status               # check Anki connection
-mdanki parse examples/      # preview cards
-mdanki sync examples/ -n -v # dry run
-mdanki sync examples/ -v    # sync to Anki
+ankify status               # check Anki connection
+ankify parse examples/      # preview cards
+ankify sync examples/ -n -v # dry run
+ankify sync examples/ -v    # sync to Anki
 ```

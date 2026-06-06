@@ -3,10 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from mdanki.anki import AnkiClient
-from mdanki.sync import sync
+from ankify.anki import AnkiClient
+from ankify.sync import sync
 
-TEST_DECK_PREFIX = "mdanki-test"
+TEST_DECK_PREFIX = "ankify-test"
 TEST_DECK = TEST_DECK_PREFIX
 
 

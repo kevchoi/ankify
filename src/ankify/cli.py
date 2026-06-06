@@ -73,7 +73,7 @@ def cmd_sync(args: argparse.Namespace) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        prog="mdanki",
+        prog="ankify",
         description="Sync Markdown files to Anki via AnkiConnect.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)

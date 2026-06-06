@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 
-from mdanki.parser import (
+from ankify.parser import (
     MarkdownCard,
     get_deck_from_path,
     parse_markdown_file,
