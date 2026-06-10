@@ -86,17 +86,6 @@ def test_parse_all(tmp_path: Path):
     assert "topic2" in decks
 
 
-def test_parse_all_ignores_agent_files(tmp_path: Path):
-    (tmp_path / "AGENTS.md").write_text("## Should be ignored\n\nDo not sync.")
-    (tmp_path / "CLAUDE.md").write_text("## Also ignored\n\nDo not sync.")
-    (tmp_path / "cards.md").write_text("## Real card\n\nSync this.")
-
-    cards = parse_all(tmp_path)
-
-    assert len(cards) == 1
-    assert cards[0].front_raw == "Real card"
-
-
 def test_find_duplicate_fronts(tmp_path: Path):
     (tmp_path / "a.md").write_text("## Same front\n\nAnswer A")
     (tmp_path / "b.md").write_text("## Same front\n\nAnswer B")

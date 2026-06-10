@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 HEADING_PATTERN = re.compile(r"^## (.+)$", re.MULTILINE)
-IGNORED_MARKDOWN_FILES = {"AGENTS.md", "CLAUDE.md"}
 
 
 @dataclass
@@ -61,11 +60,7 @@ def parse_markdown_file(file_path: Path, base_path: Path) -> list[MarkdownCard]:
 
 
 def parse_all(base_path: Path) -> list[MarkdownCard]:
-    files = sorted(
-        file_path
-        for file_path in base_path.rglob("*.md")
-        if file_path.name not in IGNORED_MARKDOWN_FILES
-    )
+    files = sorted(base_path.rglob("*.md"))
     return [
         card
         for file_path in files
