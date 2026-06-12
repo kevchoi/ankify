@@ -98,6 +98,8 @@ def sync(
         client.create_note_type_if_not_exists()
 
     existing = get_existing_notes(client)
+    # path scoping is only for --delete: matching is global by hash, so a
+    # renamed deck-root folder can't cause duplicate creation
     existing_for_path = {
         source_hash: note
         for source_hash, note in existing.items()
@@ -105,7 +107,7 @@ def sync(
     }
 
     if verbose:
-        print(f"Found {len(existing_for_path)} existing notes in Anki")
+        print(f"Found {len(existing)} existing notes in Anki")
 
     if not dry_run:
         for deck in sorted({card.deck for card in cards}):
@@ -114,7 +116,7 @@ def sync(
     for card in cards:
         front_html = render_markdown(card.front_raw)
         back_html = render_markdown(card.back_raw)
-        note = existing_for_path.get(card.source_hash)
+        note = existing.get(card.source_hash)
 
         if note is None:
             if verbose:
@@ -135,7 +137,11 @@ def sync(
                 )
             continue
 
-        if note.front != front_html or note.back != back_html:
+        if (
+            note.front != front_html
+            or note.back != back_html
+            or note.source_file != card.source_file
+        ):
             if verbose:
                 print(f"Updating: {_preview(card.front_raw)}")
             try:

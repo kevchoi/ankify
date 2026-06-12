@@ -235,3 +235,25 @@ Answer.
     sync(base, client, dry_run=False, verbose=False, delete=True)
 
     assert TEST_DECK not in client.get_deck_names()
+
+def test_sync_matches_by_hash_after_root_rename(
+    client, cleanup_test_deck, tmp_path: Path
+):
+    base, deck = make_test_notes(tmp_path)
+    (deck / "test.md").write_text("""## Rename Test Question
+
+Same answer.
+""")
+    sync(base, client, dry_run=False, verbose=False)
+
+    renamed_base = tmp_path / "decks"
+    base.rename(renamed_base)
+    stats = sync(renamed_base, client, dry_run=False, verbose=False)
+
+    assert stats.created == 0
+    assert stats.updated == 1
+    assert len(client.find_notes(f'"deck:{TEST_DECK}"')) == 1
+
+    stats = sync(renamed_base, client, dry_run=False, verbose=False)
+    assert stats.created == 0
+    assert stats.updated == 0
